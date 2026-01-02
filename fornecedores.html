@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIRIUS WEB - Gestão de Fornecedores</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; text-align: center; margin-bottom: 10px; font-size: 2.5em; }
+        .subtitle { text-align: center; color: #999; font-size: 0.9em; margin-bottom: 30px; }
+        .btn-toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-filtros { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .btn-relatorio { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .btn-small { padding: 8px 16px; font-size: 14px; margin: 0 5px; }
+        .btn-edit { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+        .btn-delete { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 30px auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: #000; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+        .tab {
+            padding: 12px 20px;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+        }
+        .tab:hover { background: #e0e0e0; }
+        .tab.active { background: #667eea; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 20px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-row-3 { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: bold; }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; }
+        textarea { resize: vertical; min-height: 100px; }
+        .telefones-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .telefones-item select { width: 150px; }
+        .telefones-item input { flex: 1; }
+        .btn-remove { background: #dc3545; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+        .btn-add { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .filtro-ativo { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #667eea; }
+        .filtro-ativo strong { color: #667eea; }
+        .btn-limpar-filtro { background: #999; padding: 6px 12px; font-size: 12px; margin-left: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold; }
+        tr:hover { background-color: #f5f5f5; }
+        .actions { white-space: nowrap; }
+        .loading { text-align: center; padding: 40px; color: #667eea; font-size: 1.2em; }
+        .error { background: #fee; color: #c00; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .success { background: #efe; color: #060; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: white;
+            min-width: 250px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            z-index: 1;
+            padding: 10px;
+        }
+        .dropdown-content a { color: #333; padding: 12px 16px; text-decoration: none; display: block; border-radius: 5px; transition: background 0.2s; }
+        .dropdown-content a:hover { background-color: #f1f1f1; }
+        .dropdown:hover .dropdown-content { display: block; }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; padding: 20px; }
+        .pagination button { background: #667eea; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .pagination button:hover:not(:disabled) { background: #5568d3; transform: translateY(-2px); }
+        .pagination button:disabled { background: #ccc; cursor: not-allowed; }
+        .pagination .page-info { color: #666; font-weight: bold; padding: 0 15px; }
+        .confirm-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .confirm-content { background-color: white; margin: 15% auto; padding: 30px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); text-align: center; }
+        .confirm-title { color: #667eea; font-size: 1.5em; font-weight: bold; margin-bottom: 20px; }
+        .confirm-message { color: #333; font-size: 1.1em; margin-bottom: 30px; }
+        .confirm-buttons { display: flex; gap: 10px; justify-content: center; }
+        .btn-confirm-yes { background: #dc3545; padding: 12px 30px; }
+        .btn-confirm-no { background: #6c757d; padding: 12px 30px; }
+        @media (max-width: 768px) {
+            .form-row, .form-row-3 { grid-template-columns: 1fr; }
+            table { font-size: 14px; }
+            th, td { padding: 10px 5px; }
+            .btn-small { padding: 6px 12px; font-size: 12px; }
+            .btn-toolbar { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 SIRIUS WEB</h1>
+        <div class="subtitle">Gestão de Fornecedores</div>
+
+        <div class="btn-toolbar">
+            <button class="btn" id="btnAdicionar">➕ Novo Fornecedor</button>
+            
+            <div class="dropdown">
+                <button class="btn btn-filtros">🔍 Filtros</button>
+                <div class="dropdown-content">
+                    <a href="#" id="filtroId">🔢 Por Identificador</a>
+                    <a href="#" id="filtroRazao">📝 Por Razão Social</a>
+                    <a href="#" id="filtroPessoa">👤 Por Pessoa Contato</a>
+                    <a href="#" id="filtroCnpj">🏢 Por CNPJ</a>
+                    <a href="#" id="filtroSituacao">🟢 Por Situação</a>
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button class="btn btn-relatorio">📄 Relatórios</button>
+                <div class="dropdown-content">
+                    <a href="#" id="relatorioFiltro">📊 Fornecedores sob filtro</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="filtroAtivo" class="filtro-ativo" style="display:none;">
+            <strong>Filtro ativo:</strong> <span id="textoFiltro"></span>
+            <button class="btn btn-limpar-filtro" id="btnLimparFiltro">✖ Limpar</button>
+        </div>
+
+        <div id="mensagem"></div>
+        <div id="loading" class="loading" style="display:none;">Carregando...</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Razão Social</th>
+                    <th>CNPJ</th>
+                    <th>Pessoa Contato</th>
+                    <th>Situação</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="corpoTabela"></tbody>
+        </table>
+
+        <div class="pagination">
+            <button id="btnPrimeira">⏮️ Primeira</button>
+            <button id="btnAnterior">◀️ Anterior</button>
+            <span class="page-info">Página <span id="paginaAtual">1</span> de <span id="totalPaginas">1</span></span>
+            <button id="btnProxima">Próxima ▶️</button>
+            <button id="btnUltima">Última ⏭️</button>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="btnFechar">&times;</span>
+            <h2 id="modalTitulo">Adicionar Fornecedor</h2>
+            
+            <div class="tabs">
+                <button class="tab active" data-tab="0">Dados Principais</button>
+                <button class="tab" data-tab="1">Endereço</button>
+                <button class="tab" data-tab="2">Contato</button>
+                <button class="tab" data-tab="3">Observações</button>
+            </div>
+
+            <form id="formFornecedor">
+                <input type="hidden" id="fornecedorId">
+
+                <div class="tab-content active" id="aba0">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="id">ID:</label>
+                            <input type="number" id="id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="situacao">Situação:</label>
+                            <select id="situacao" required>
+                                <option value="A">A - Ativo</option>
+                                <option value="I">I - Inativo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="razao_social">Razão Social: *</label>
+                        <input type="text" id="razao_social" maxlength="60" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pessoa_p_contato">Pessoa para Contato:</label>
+                        <input type="text" id="pessoa_p_contato">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cnpj">CNPJ: *</label>
+                            <input type="text" id="cnpj" maxlength="18" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="insc_estadual">Inscrição Estadual:</label>
+                            <input type="text" id="insc_estadual">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="aba1">
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="end_logradouro">Logradouro:</label>
+                            <input type="text" id="end_logradouro">
+                        </div>
+                        <div class="form-group">
+                            <label for="end_numero">Número:</label>
+                            <input type="text" id="end_numero">
+                        </div>
+                        <div class="form-group">
+                            <label for="end_andar">Andar:</label>
+                            <input type="text" id="end_andar">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="end_complemento">Complemento:</label>
+                            <input type="text" id="end_complemento">
+                        </div>
+                        <div class="form-group">
+                            <label for="end_bairro">Bairro:</label>
+                            <input type="text" id="end_bairro">
+                        </div>
+                    </div>
+                    <div class="form-row-3">
+                        <div class="form-group">
+                            <label for="end_cidade">Cidade:</label>
+                            <input type="text" id="end_cidade">
+                        </div>
+                        <div class="form-group">
+                            <label for="end_uf">UF:</label>
+                            <input type="text" id="end_uf" maxlength="2">
+                        </div>
+                        <div class="form-group">
+                            <label for="end_cep">CEP:</label>
+                            <input type="text" id="end_cep" maxlength="9">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="codigo_municipio">Código Município:</label>
+                        <input type="text" id="codigo_municipio" maxlength="9">
+                    </div>
+                </div>
+
+                <div class="tab-content" id="aba2">
+                    <div class="form-group">
+                        <label>Telefones:</label>
+                        <div id="telefones-list"></div>
+                        <button type="button" class="btn-add" id="btnAddTelefone">➕ Adicionar Telefone</button>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="site">Site:</label>
+                        <input type="url" id="site" placeholder="https://">
+                    </div>
+                </div>
+
+                <div class="tab-content" id="aba3">
+                    <div class="form-group">
+                        <label for="obs">Observações:</label>
+                        <textarea id="obs"></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn">Salvar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalFiltro" class="modal">
+        <div class="modal-content">
+            <span class="close" id="btnFecharFiltro">&times;</span>
+            <h2 id="tituloFiltro">Filtrar Fornecedores</h2>
+            <form id="formFiltro">
+                <div class="form-group" id="campoFiltro"></div>
+                <button type="submit" class="btn">Aplicar Filtro</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-content">
+            <div class="confirm-title">SIRIUS WEB</div>
+            <div class="confirm-message" id="confirmMessage"></div>
+            <div class="confirm-buttons">
+                <button class="btn btn-confirm-no" id="btnConfirmNo">Cancelar</button>
+                <button class="btn btn-confirm-yes" id="btnConfirmYes">Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="fornecedores.js"></script>
+</body>
+</html>
